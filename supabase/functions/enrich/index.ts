@@ -30,7 +30,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Step 1: Scrape website with Firecrawl
+    // Step 1: Scrape main page with Firecrawl
     let formattedUrl = website.trim();
     if (!formattedUrl.startsWith("http://") && !formattedUrl.startsWith("https://")) {
       formattedUrl = `https://${formattedUrl}`;
@@ -61,13 +61,45 @@ serve(async (req) => {
     }
 
     const scrapeData = await scrapeResponse.json();
-    const markdown = scrapeData.data?.markdown || scrapeData.markdown || "";
-    const links = scrapeData.data?.links || scrapeData.links || [];
+    const mainMarkdown = scrapeData.data?.markdown || scrapeData.markdown || "";
+    const allLinks = scrapeData.data?.links || scrapeData.links || [];
 
-    // Truncate content to avoid token limits
-    const truncated = markdown.substring(0, 8000);
+    // Step 2: Discover and scrape important subpages
+    const subpagePatterns = [/about/i, /pricing/i, /careers|jobs/i, /blog/i, /product/i, /team/i, /docs/i];
+    const subpageUrls = allLinks
+      .filter((link: string) => {
+        try {
+          const u = new URL(link, formattedUrl);
+          return u.origin === new URL(formattedUrl).origin && subpagePatterns.some((p) => p.test(u.pathname));
+        } catch { return false; }
+      })
+      .slice(0, 4);
 
-    console.log("Scraped", markdown.length, "chars, truncated to", truncated.length);
+    console.log("Scraping subpages:", subpageUrls);
+
+    const subpageResults = await Promise.allSettled(
+      subpageUrls.map(async (url: string) => {
+        const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: true }),
+        });
+        if (!res.ok) return "";
+        const d = await res.json();
+        return `\n\n--- PAGE: ${url} ---\n${(d.data?.markdown || d.markdown || "").substring(0, 2000)}`;
+      })
+    );
+
+    const subpageText = subpageResults
+      .filter((r): r is PromiseFulfilledResult<string> => r.status === "fulfilled" && !!r.value)
+      .map((r) => r.value)
+      .join("");
+
+    const combined = mainMarkdown.substring(0, 6000) + subpageText;
+    console.log("Total scraped content:", combined.length, "chars");
 
     // Step 2: Send to AI for structured extraction via tool calling
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -86,7 +118,7 @@ serve(async (req) => {
           },
           {
             role: "user",
-            content: `Analyze this company website content and extract structured data.\n\nWebsite: ${formattedUrl}\n\nContent:\n${truncated}\n\nLinks found on the site:\n${links.slice(0, 30).join("\n")}`,
+            content: `Analyze this company website content (main page + key subpages) and extract structured data.\n\nWebsite: ${formattedUrl}\n\nContent:\n${combined}\n\nLinks found on the site:\n${allLinks.slice(0, 30).join("\n")}`,
           },
         ],
         tools: [
