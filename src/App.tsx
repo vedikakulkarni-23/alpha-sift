@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import CompaniesPage from "@/pages/CompaniesPage";
 import CompanyDetailPage from "@/pages/CompanyDetailPage";
+import AddCompanyPage from "@/pages/AddCompanyPage";
 import ListsPage from "@/pages/ListsPage";
 import SavedPage from "@/pages/SavedPage";
 import NotFound from "./pages/NotFound";
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/" element={<Navigate to="/companies" replace />} />
           <Route element={<AppLayout />}>
             <Route path="/companies" element={<CompaniesPage />} />
+            <Route path="/companies/new" element={<AddCompanyPage />} />
             <Route path="/company/:id" element={<CompanyDetailPage />} />
             <Route path="/lists" element={<ListsPage />} />
             <Route path="/saved" element={<SavedPage />} />
