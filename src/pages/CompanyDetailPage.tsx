@@ -1,9 +1,18 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { fetchCompanies, fetchNotes, fetchLists, insertNote, addToList, DbCompany, DbNote, DbList } from "@/lib/api";
+import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Globe, MapPin, Calendar, Users, DollarSign, Sparkles, Plus, List, ExternalLink, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+interface EnrichmentData {
+  summary: string;
+  what_they_do: string[];
+  keywords: string[];
+  signals: { signal: string; detected: boolean; details?: string }[];
+  sources: string[];
+}
 
 export default function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +24,7 @@ export default function CompanyDetailPage() {
   const [newNote, setNewNote] = useState("");
   const [showListPicker, setShowListPicker] = useState(false);
   const [enriching, setEnriching] = useState(false);
+  const [enrichment, setEnrichment] = useState<EnrichmentData | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -47,9 +57,24 @@ export default function CompanyDetailPage() {
     } catch { toast.error("Failed to add note"); }
   };
 
-  const handleEnrich = () => {
+  const handleEnrich = async () => {
+    if (!company.website) { toast.error("No website to enrich"); return; }
     setEnriching(true);
-    setTimeout(() => { setEnriching(false); toast.success("Company data enriched with AI"); }, 2000);
+    try {
+      const { data, error } = await supabase.functions.invoke("enrich", {
+        body: { website: company.website },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.data) {
+        setEnrichment(data.data);
+        toast.success("Company enriched with AI");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Enrichment failed");
+    } finally {
+      setEnriching(false);
+    }
   };
 
   const handleAddToList = async (listId: string) => {
@@ -125,6 +150,63 @@ export default function CompanyDetailPage() {
           <div className="flex flex-wrap gap-2">
             {company.tags.map((tag) => <span key={tag} className="px-2.5 py-1 rounded-full bg-secondary text-xs font-medium text-secondary-foreground">{tag}</span>)}
           </div>
+        </div>
+      )}
+
+      {/* AI Enrichment Results */}
+      {enrichment && (
+        <div className="mb-8 space-y-4 animate-slide-up">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" /> AI Enrichment
+          </h2>
+
+          <div className="p-4 rounded-lg bg-card border border-border">
+            <h3 className="text-xs font-medium text-muted-foreground mb-1">Summary</h3>
+            <p className="text-sm text-foreground leading-relaxed">{enrichment.summary}</p>
+          </div>
+
+          <div className="p-4 rounded-lg bg-card border border-border">
+            <h3 className="text-xs font-medium text-muted-foreground mb-2">What They Do</h3>
+            <ul className="space-y-1">
+              {enrichment.what_they_do.map((item, i) => (
+                <li key={i} className="text-sm text-foreground flex items-start gap-2">
+                  <span className="text-primary mt-1">•</span> {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="p-4 rounded-lg bg-card border border-border">
+            <h3 className="text-xs font-medium text-muted-foreground mb-2">Keywords</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {enrichment.keywords.map((kw) => (
+                <span key={kw} className="px-2 py-0.5 rounded-full bg-primary/10 text-xs font-medium text-primary">{kw}</span>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-4 rounded-lg bg-card border border-border">
+            <h3 className="text-xs font-medium text-muted-foreground mb-2">Signals</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {enrichment.signals.map((sig, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <span className={sig.detected ? "text-success" : "text-muted-foreground"}>{sig.detected ? "✓" : "✗"}</span>
+                  <span className={sig.detected ? "text-foreground" : "text-muted-foreground"}>{sig.signal}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {enrichment.sources.length > 0 && (
+            <div className="p-4 rounded-lg bg-card border border-border">
+              <h3 className="text-xs font-medium text-muted-foreground mb-2">Sources</h3>
+              <div className="space-y-1">
+                {enrichment.sources.map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary hover:underline truncate">{url}</a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
