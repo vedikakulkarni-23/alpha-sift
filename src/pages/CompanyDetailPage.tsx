@@ -25,6 +25,7 @@ export default function CompanyDetailPage() {
   const [showListPicker, setShowListPicker] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [enrichment, setEnrichment] = useState<EnrichmentData | null>(null);
+  const [enrichedAt, setEnrichedAt] = useState<Date | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -68,6 +69,7 @@ export default function CompanyDetailPage() {
       if (data?.error) throw new Error(data.error);
       if (data?.data) {
         setEnrichment(data.data);
+        setEnrichedAt(new Date());
         toast.success("Company enriched with AI");
       }
     } catch (e: any) {
@@ -158,6 +160,7 @@ export default function CompanyDetailPage() {
         <div className="mb-8 space-y-4 animate-slide-up">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" /> AI Enrichment
+            {enrichedAt && <span className="text-xs font-normal text-muted-foreground ml-auto">Enriched {enrichedAt.toLocaleString()}</span>}
           </h2>
 
           <div className="p-4 rounded-lg bg-card border border-border">
