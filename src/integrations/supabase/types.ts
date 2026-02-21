@@ -14,7 +14,170 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      companies: {
+        Row: {
+          created_at: string
+          description: string | null
+          employees: string | null
+          founded: number | null
+          funding: string | null
+          id: string
+          location: string | null
+          logo: string | null
+          name: string
+          sector: string | null
+          stage: string | null
+          tags: string[] | null
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          employees?: string | null
+          founded?: number | null
+          funding?: string | null
+          id?: string
+          location?: string | null
+          logo?: string | null
+          name: string
+          sector?: string | null
+          stage?: string | null
+          tags?: string[] | null
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          employees?: string | null
+          founded?: number | null
+          funding?: string | null
+          id?: string
+          location?: string | null
+          logo?: string | null
+          name?: string
+          sector?: string | null
+          stage?: string | null
+          tags?: string[] | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      company_list_items: {
+        Row: {
+          added_at: string
+          company_id: string
+          id: string
+          list_id: string
+        }
+        Insert: {
+          added_at?: string
+          company_id: string
+          id?: string
+          list_id: string
+        }
+        Update: {
+          added_at?: string
+          company_id?: string
+          id?: string
+          list_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_list_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_list_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "company_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_lists: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_notes: {
+        Row: {
+          company_id: string
+          content: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          company_id: string
+          content: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          company_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_notes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_searches: {
+        Row: {
+          created_at: string
+          filters: Json | null
+          id: string
+          name: string
+          query: string | null
+          result_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json | null
+          id?: string
+          name: string
+          query?: string | null
+          result_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          filters?: Json | null
+          id?: string
+          name?: string
+          query?: string | null
+          result_count?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
