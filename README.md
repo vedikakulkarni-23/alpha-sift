@@ -50,6 +50,26 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
+## Environment Variables
+
+This project uses Vite environment variables (`import.meta.env`).
+
+**Frontend (public, set in `.env`):**
+- `VITE_SUPABASE_URL` — Backend API URL
+- `VITE_SUPABASE_PUBLISHABLE_KEY` — Public anon key
+- `VITE_SUPABASE_PROJECT_ID` — Project identifier
+
+> When using Lovable Cloud, these are auto-configured. Do not edit `.env` directly.
+
+**Server-side (backend secrets, never exposed to the browser):**
+- `FIRECRAWL_API_KEY` — Used in the enrichment backend function for web scraping
+- `LOVABLE_API_KEY` — Auto-provided by Lovable Cloud for AI features
+
+To set up locally, copy `.env.example` to `.env` and fill in your values:
+```sh
+cp .env.example .env
+```
+
 ## What technologies are used for this project?
 
 This project is built with:
